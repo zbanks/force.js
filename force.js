@@ -21,7 +21,7 @@ function Vector(x, y, kwargs){
     }
     
     this.draw = function(paper, offset, attrs){
-        if(this.rep !== undefined){
+        if(this.rep){
             this.erase();
         }
         if(offset === undefined){
@@ -31,6 +31,8 @@ function Vector(x, y, kwargs){
             attr = offset;
             offset = new Vector(0, 0);
         }
+        attrs = _(attrs || {}).extend(this.drawAttrs);
+        this.drawAttrs = _(attrs).extend();
         //console.log(offset);
         str = "M " + offset.x + " " + offset.y + " l " + this.x + " " + this.y;
         this.rep = paper.path(str).attr(attrs);
@@ -39,7 +41,7 @@ function Vector(x, y, kwargs){
     
     
     this.erase = function(){
-        this.rep.remove();
+        this.rep && this.rep.remove();
         return this;
     }
     
@@ -157,10 +159,11 @@ function Force(kwargs){
     }
     
     this.draw = function(paper, obj1, obj2, attrs){
-        if(this.rep1 !== undefined){
+        if(this.rep1){
             this.erase();
         }
-        attrs = attrs || {};
+        attrs = _(attrs || {}).extend(this.drawAttrs);
+        this.drawAttrs = _(attrs).extend();
         var k = attrs.scale || 1;
         delete attrs.scale
         var v1 = this.value(obj1, obj2).scale(k);
@@ -173,8 +176,9 @@ function Force(kwargs){
 
     
     this.erase = function(){
-        this.rep1.remove();
-        this.rep2.remove();
+    
+        this.rep1 && this.rep1.remove();
+        this.rep2 && this.rep2.remove();
         return this;
     }
     
@@ -193,6 +197,13 @@ function Force(kwargs){
         v.scale(-1).add(obj1.pos).scale(-1);
         return v.scale(this.coeff * obj1[this.prop] * obj2[this.prop] / Math.pow(v.r(), 2)); 
     }
+    
+    this.linDist = function(obj1, obj2){
+        // Linear (distance) relationship
+        var v = obj2.pos.copy();
+        v.scale(-1).add(obj1.pos).scale(-1);
+        return v.scale(this.coeff * obj1[this.prop] * obj2[this.prop]); 
+    }
 }
 
 function collision(obj1, obj2){
@@ -205,20 +216,28 @@ function collision(obj1, obj2){
         var v = obj2.vel.copy().add(obj1.vel, -1); //v = v1 - v2
         var cos_t = v.dot(r) / (v.r() * r.r());
         var t = (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1)));
-        console.log("col", del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) + v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
+        //console.log("col", del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) + v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
         // Move everything, not just 2 objs
         obj1.pos.add(obj1.vel, t);
         obj2.pos.add(obj2.vel, t);
         
         // Collision 
-        var Cr = obj1.coeff(obj2);
+        var Cr = obj1.coeff("elastic", obj2);
         var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
         var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
+        obj1.vel.erase();
+        obj2.vel.erase();
         obj1.vel = vf1.reflect(r);
         obj2.vel = vf2.reflect(r);
+        
+        return t;
     }else{
-        return new Vector(0, 0);
+        return 0;
     }
+}
+
+function tie(obj1, obj2){
+    // Anti-collision
 }
 
 function Obj(kwargs){
@@ -228,7 +247,7 @@ function Obj(kwargs){
         acl: new Vector(0, 0),
         //jrk: new Vector(0, 0),
         r : 1,
-        coeff_elastic: 0,
+        coeff_elastic: 0.8,
         coeff_friction: 0.3,
         mass : 1
     };
@@ -242,12 +261,19 @@ function Obj(kwargs){
         }
     }
     
-    this.draw = function(paper, attrs){
-        if(this.rep !== undefined){
+    this.draw = function(paper, attrs, velAttrs, aclAttrs){
+        if(this.rep){
             this.erase();
         }
-        attrs = attrs || {};
+        attrs = _(attrs || {}).extend(this.drawAttrs);
+        this.drawAttrs = _(attrs).extend();
         this.rep = paper.circle(this.pos.x, this.pos.y, this.r).attr(attrs);
+        if(velAttrs){
+            this.vel.draw(paper, this.pos, velAttrs);
+        }
+        if(aclAttrs){
+            this.acl.draw(paper, this.pos, aclAttrs);
+        }
         return this;
     }
     /*
