@@ -187,17 +187,17 @@ function collision(obj1, obj2){
         var fin_r = obj1.r + obj2.r;
         var r = obj2.pos.copy().add(obj1.pos, -1); //p = p1 - p2
         var v = obj2.vel.copy().add(obj1.vel, -1); //v = v1 - v2
-        var cos_t = v.r() * r.r() / v.dot(r);
+        var cos_t = v.dot(r) / (v.r() * r.r());
         var t = (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1)));
-        //console.log("col", del_r, fin_r, r, v, t);
+        console.log("col", del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) + v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
         // Move everything, not just 2 objs
         obj1.pos.add(obj1.vel, t);
         obj2.pos.add(obj2.vel, t);
         
         // Collision 
         var Cr = obj1.coeff(obj2);
-        var vf1 = v.copy().scale(-Cr * obj2.mass).add(obj1.pos, obj1.mass).add(obj2.pos, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
-        var vf2 = v.copy().scale(Cr * obj1.mass).add(obj1.pos, obj1.mass).add(obj2.pos, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
+        var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
+        var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
         obj1.vel = vf1;
         obj2.vel = vf2;
     }else{
