@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <script src="raphael.js" type="text/javascript"></script>
+        <script src="underscore.js" type="text/javascript"></script>
+        <script src="force.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            var paper = Raphael(10, 10, 400, 400);
+            var ball = new Obj({ pos: new Vector(100, 100), vel: new Vector(0, -3), r: 10 });
+            ball.set("mass", 10);
+            ball.draw(paper, { fill: Raphael.getColor() });
+            var rock = new Obj({ pos: new Vector(20, 20), r: 19 });
+            rock.set("mass", 500);
+            rock.draw(paper, { fill: "grey"});
+            
+            var gravity = new Force({ prop: "mass", coeff: 100 });
+            gravity.draw(paper, ball, rock, {"scale": 2});
+            
+            
+            setInterval(function(){
+                gravity.act(ball, rock, 0.1);
+                ball.move(0.1);
+                rock.move(0.1);
+                collision(ball, rock);
+                gravity.draw(paper, ball, rock);
+                
+                ball.draw(paper, {fill : Raphael.getColor() });
+                rock.draw(paper, {fill : "grey" });
+            }, 100);
+        </script>
+    </body> 
+</html>
