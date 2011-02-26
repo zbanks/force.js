@@ -95,12 +95,28 @@ function Vector(x, y, kwargs){
         return this.scale(this.dot(v) / this.dot(this));
     }
     
-    this.ortho = function(v){
+    this.normal = function(v){
         var t = this.x;
         this.x = this.y;
         this.y = -t;
+        return this;
     }
     
+    this.norm = function(){
+        var r = this.copy().scale(1/this.r());
+        this.x = r.x;
+        this.y = r.y;
+        return this;
+    }
+    
+    this.reflect = function(v){
+        var n = v.copy().norm();
+        // -x + 2(x . n) n
+        var r = n.scale(2 * n.dot(this)).add(this, -1);
+        this.x = r.x;
+        this.y = r.y;
+        return this;
+    }
 }
 
 function vector(x, y, kwargs){
@@ -198,8 +214,8 @@ function collision(obj1, obj2){
         var Cr = obj1.coeff(obj2);
         var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
         var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
-        obj1.vel = vf1;
-        obj2.vel = vf2;
+        obj1.vel = vf1.reflect(r);
+        obj2.vel = vf2.reflect(r);
     }else{
         return new Vector(0, 0);
     }
