@@ -211,7 +211,7 @@ function collision(obj1, obj2){
         obj2.pos.add(obj2.vel, t);
         
         // Collision 
-        var Cr = obj1.coeff(obj2);
+        var Cr = obj1.coeff("elastic", obj2);
         var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
         var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
         obj1.vel = vf1.reflect(r);
@@ -228,7 +228,7 @@ function Obj(kwargs){
         acl: new Vector(0, 0),
         //jrk: new Vector(0, 0),
         r : 1,
-        coeff_elastic: 0.8,
+        coeff_elastic: 1,
         coeff_friction: 0.3,
         mass : 1
     };
