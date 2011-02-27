@@ -13,32 +13,37 @@
             var paper = Raphael(10, 30, 600, 600);
             objs = [];
             
-            var ball = new Obj({ pos: new Vector(10, 10), vel: new Vector(20, 17), r: 10 });
+            var ball = new Obj({ pos: new Vector(10, 10), vel: new Vector(2., 1.7), r: 10 });
             ball.set("mass", 10);
             ball.draw(paper, { fill: "blue" });
-            var rock = new Obj({ pos: new Vector(100, 50), r: 20 });
-            rock.set("mass", 40); 
+            var rock = new Obj({ pos: new Vector(100, 50), r: 20, vel: new Vector(2, 2) });
+            rock.set("mass", 8); 
             rock.draw(paper, { fill: "grey"});
-            //objs = objs.concat([ball, rock]);
+            objs = objs.concat([ball, rock]);
             //objs.push(new Obj({pos: new Vector(190, 50), vel: new Vector(-20, -1), r: 8 }));
             //objs[2].set("mass", 20);
             
             var chain = [];
             for(var i = 0; i < 20; i++){
-                chain[i] = new Obj({ pos : new Vector(10 + i * 25, 100+i ), r : 4});
+                chain[i] = new Obj({ pos : new Vector(10 + i * 24, 100+i + i * i * 0.3), r : 4});
                 chain[i].set("spring", 10);
                 chain[i].set("mass", 4);
                 chain[i].draw(paper, {fill: Raphael.getColor() });
             }
-            chain[0].set("mass", 10);
-            chain[19].set("mass", 10);
+            chain[0].set("mass", 60);
+            chain[0].set("r", 10);
+            chain[19].set("mass", 60);
+            chain[19].set("r", 10);
             objs = objs.concat(chain);
             
             var gravity = new Force({ prop: "mass", coeff: 1 });
             //gravity.draw(paper, ball, rock, {"scale": 1, stroke: "green"});
             
             var spring = new Force({ prop: "spring", coeff: 0.01, fn: "springDist", zeroVal: 23})
-            //spring.draw(paper, chain[0], chain[1], paper, {stroke: "orange"}); 
+            //spring.draw(paper, chain[0], chain[1], {stroke: "orange"}); 
+            
+            var tension = new Force({ prop: "mass", coeff: -0.1, fn: "invDist" });
+            tension.draw(paper, chain[0], chain[19], {stroke: "orange", scale:20}); 
             
             var update = function(){
                
@@ -47,11 +52,14 @@
                 }
                 for(var i = 0; i < 19; i++){
                     spring.act(chain[i], chain[i+1], 1);
+                    //spring.draw(paper, chain[i], chain[i+1], {});
                 }
+                tension.act(chain[0], chain[19]);
+               // tension.draw(paper, chain[0], chain[19], {});
                 
                 for(var i = 0; i < objs.length; i++){
                     for(var j = 0; j < i; j++){
-                        gravity.act(objs[i], objs[j], 1);
+                        // gravity.act(objs[i], objs[j], 1);
                     }
                 }
                 
@@ -71,6 +79,7 @@
                     objs[i].draw(paper);
                    
                 }
+                tension.draw(paper, chain[0], chain[19], {});
                 
                 /*
                 
