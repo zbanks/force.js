@@ -7,52 +7,67 @@
         <script src="force.js" type="text/javascript"></script>
     </head>
     <body>
+        <a onclick="window.interval = window.setInterval(update, 100);">start</a>
+        <a onclick="window.clearInterval(window.interval);">stop</a>
         <script type="text/javascript">
-            var paper = Raphael(10, 10, 400, 400);
+            var paper = Raphael(10, 30, 400, 400);
             objs = [];
-            /*
+            
             var ball = new Obj({ pos: new Vector(10, 10), vel: new Vector(20, 17), r: 10 });
             ball.set("mass", 10);
             ball.draw(paper, { fill: "blue" });
             var rock = new Obj({ pos: new Vector(100, 50), r: 20 });
             rock.set("mass", 40); 
             rock.draw(paper, { fill: "grey"});
-            objs = objs.concat([ball, rock]);
-            */
+            //objs = objs.concat([ball, rock]);
+            //objs.push(new Obj({pos: new Vector(190, 50), vel: new Vector(-20, -1), r: 8 }));
+            //objs[2].set("mass", 20);
+            
             var chain = [];
             for(var i = 0; i < 20; i++){
-                chain[i] = new Obj({ pos : new Vector(30 + i * 11, 70+ish ), r : 5});
-                chain[i].set("spring", 10 + i);
+                chain[i] = new Obj({ pos : new Vector(10 + i * 15, 70+i ), r : 4});
+                chain[i].set("spring", 10 + i*0.1);
                 chain[i].set("mass", 3);
                 chain[i].draw(paper, {fill: Raphael.getColor() });
             }
             objs = objs.concat(chain);
             
-            var gravity = new Force({ prop: "mass", coeff: 1000 });
+            var gravity = new Force({ prop: "mass", coeff: 1 });
             //gravity.draw(paper, ball, rock, {"scale": 1, stroke: "green"});
             
-            var spring = new Force({ prop: "spring", coeff: 0.1, fn: "linDist"})
+            var spring = new Force({ prop: "spring", coeff: 0.00001, fn: "linDist"})
             //spring.draw(paper, chain[0], chain[1], paper, {stroke: "orange"}); 
             
-            
-            setInterval(function(){
+            var update = function(){
                
+               for(var i = 0; i < objs.length; i++){
+                objs[i].acl.zero();
+                }
                 for(var i = 0; i < 19; i++){
-                    spring.act(chain[i], chain[i+1], 0.1);
+                    spring.act(chain[i], chain[i+1], 1);
                 }
                 
                 for(var i = 0; i < objs.length; i++){
                     for(var j = 0; j < i; j++){
+                        gravity.act(objs[i], objs[j], 1);
+                    }
+                }
+                
+                for(var i = 0; i < objs.length; i++){
+                    objs[i].move(1);
+                    for(var j = 0; j < objs.length; j++){
+                        if(j == i)
+                            continue
                         collision(objs[i], objs[j]);
-                        gravity.act(objs[i], objs[j], 0.1);
                         
                     }
                     
                     
                 }
                 for(var i = 0; i < objs.length; i++){
-                    objs[i].move(0.1);
+                    
                     objs[i].draw(paper);
+                   
                 }
                 
                 /*
@@ -62,7 +77,9 @@
                 rock.draw(paper, {}, {stroke : "blue"});
                 gravity.draw(paper, ball, rock);
                 */
-            }, 100);
+            };
+            
+            //var interval = window.setInterval(update, 100);
         </script>
     </body> 
 </html>

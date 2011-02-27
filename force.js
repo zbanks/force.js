@@ -45,6 +45,11 @@ function Vector(x, y, kwargs){
         return this;
     }
     
+    this.gets = function(v){
+        this.x = v.x;
+        this.y = v.y;
+    }
+    
     this.r = function(){
         return Math.sqrt(this.dot(this));
     }
@@ -106,17 +111,15 @@ function Vector(x, y, kwargs){
     
     this.norm = function(){
         var r = this.copy().scale(1/this.r());
-        this.x = r.x;
-        this.y = r.y;
+        this.gets(r);
         return this;
     }
     
     this.reflect = function(v){
-        var n = v.copy().norm();
+        var n = v.copy().normal().norm();
         // -x + 2(x . n) n
-        var r = n.scale(2 * n.dot(this)).add(this, -1);
-        this.x = r.x;
-        this.y = r.y;
+        var r = n.scale(-2 * n.dot(this)).add(this, 1);
+        this.gets(r);
         return this;
     }
 }
@@ -200,8 +203,7 @@ function Force(kwargs){
     
     this.linDist = function(obj1, obj2){
         // Linear (distance) relationship
-        var v = obj2.pos.copy();
-        v.scale(-1).add(obj1.pos).scale(-1);
+        var v = obj2.pos.copy().add(obj1.pos, -1);
         return v.scale(this.coeff * obj1[this.prop] * obj2[this.prop]); 
     }
 }
@@ -213,23 +215,29 @@ function collision(obj1, obj2){
         // Back up! no more overlap...
         var fin_r = obj1.r + obj2.r;
         var r = obj2.pos.copy().add(obj1.pos, -1); //p = p1 - p2
-        var v = obj2.vel.copy().add(obj1.vel, -1); //v = v1 - v2
+        var v = obj2.vel.copy().add(obj1.vel, -1)//.add(obj2.acl, -0.1).add(obj1.acl, 0.1); //v = v1 - v2
         var cos_t = v.dot(r) / (v.r() * r.r());
-        var t = (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1)));
-        //console.log("col", del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) + v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
+   //     var t = (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1)));
+        var t = (1 / v.dot(v)) * (-v.dot(r) - Math.sqrt(-Math.pow(v.dot(r.copy().normal()), 2) + fin_r * fin_r * v.dot(v)));
+        if(t < -1.00001 || t > 0.0001){
+            console.log("col", t < -1 || t > 0, del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
+            t = -1;
+        }
+       //t *= 1.1;
         // Move everything, not just 2 objs
-        obj1.pos.add(obj1.vel, t);
-        obj2.pos.add(obj2.vel, t);
+        obj1.pos.add(obj1.vel, t)//.add(obj1.acl, -t);
+        obj2.pos.add(obj2.vel, t)//.add(obj2.acl, -t);
         
         // Collision 
         var Cr = obj1.coeff("elastic", obj2);
-        var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
-        var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass));
-        obj1.vel.erase();
-        obj2.vel.erase();
-        obj1.vel = vf1.reflect(r);
-        obj2.vel = vf2.reflect(r);
-        
+        var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass)).reflect(r);
+        var vf2 = v.copy().scale(-Cr * obj1.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass)).reflect(r);
+        //obj1.vel.erase();
+        //obj2.vel.erase();
+      //  obj1.acl.add(vf1);
+      //  obj2.acl.add(vf2);
+        obj1.vel.gets(vf1);
+        obj2.vel.gets(vf2);
         return t;
     }else{
         return 0;
@@ -289,14 +297,14 @@ function Obj(kwargs){
     
     this.move = function(t, i){
         t = t || 1;
-        i = Math.floor(i) || 10;
-        var delta = t / i;
-        for(; i >= 0; i--){
+        i = Math.floor(i) || 1;
+        var delta = t// / i;
+        //for(; i > 0; i--){
             //this.acl.add(this.jrk, delta);
             this.vel.add(this.acl, delta);
             this.pos.add(this.vel, delta); 
-        }
-        this.acl.zero(); // Acceleration is not conserved!
+        //}
+        //this.acl.zero(); // Acceleration is not conserved!
         
     }
     
