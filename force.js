@@ -110,8 +110,7 @@ function Vector(x, y, kwargs){
     }
     
     this.norm = function(){
-        var r = this.copy().scale(1/this.r());
-        this.gets(r);
+        this.scale(1/this.r());
         return this;
     }
     
@@ -133,6 +132,7 @@ function Force(kwargs){
         fn : "invSqDist",
         prop : "r",
         coeff : 1,
+        zeroVal : 0,
     };
     
     for(var i in defaults){
@@ -206,6 +206,13 @@ function Force(kwargs){
         var v = obj2.pos.copy().add(obj1.pos, -1);
         return v.scale(this.coeff * obj1[this.prop] * obj2[this.prop]); 
     }
+    
+    this.springDist = function(obj1, obj2){
+        // Linear, but F != 0 @ d = 0
+        // Must specify zeroVal
+        var v = obj2.pos.copy().add(obj1.pos, -1);
+        return v.scale((v.r() - this.zeroVal) / v.r()).scale(this.coeff * obj1[this.prop] * obj2[this.prop]);
+    }
 }
 
 function collision(obj1, obj2){
@@ -220,14 +227,16 @@ function collision(obj1, obj2){
    //     var t = (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1)));
         var t = (1 / v.dot(v)) * (-v.dot(r) - Math.sqrt(-Math.pow(v.dot(r.copy().normal()), 2) + fin_r * fin_r * v.dot(v)));
         if(t < -1.00001 || t > 0.0001){
-            console.log("col", t < -1 || t > 0, del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) - v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
+            console.log("col", t < -1 || t > 0, del_r, fin_r, r, v, t, (1 / v.dot(v)) * (-v.dot(r) + v.r() * Math.sqrt(fin_r * fin_r + r.dot(r) * (cos_t * cos_t - 1))));
             t = -1;
         }
-       //t *= 1.1;
+        // If two particles are about to completely overlap, push apart
+        //t *= 1 - (r.r() / fin_r) + 0.1;
         // Move everything, not just 2 objs
         obj1.pos.add(obj1.vel, t)//.add(obj1.acl, -t);
         obj2.pos.add(obj2.vel, t)//.add(obj2.acl, -t);
-        
+        //obj1.pos = obj1._pos.copy();
+        //obj2.pos = obj2._pos.copy()
         // Collision 
         var Cr = obj1.coeff("elastic", obj2);
         var vf1 = v.copy().scale(Cr * obj2.mass).add(obj1.vel, obj1.mass).add(obj2.vel, obj2.mass).scale(1 / (obj1.mass + obj2.mass)).reflect(r);
@@ -255,7 +264,7 @@ function Obj(kwargs){
         acl: new Vector(0, 0),
         //jrk: new Vector(0, 0),
         r : 1,
-        coeff_elastic: 0.8,
+        coeff_elastic: 0.7,
         coeff_friction: 0.3,
         mass : 1
     };
@@ -268,6 +277,9 @@ function Obj(kwargs){
             this[i] = defaults[i];
         }
     }
+    this._vel = this.vel;
+    this._acl = this.acl;
+    this._pos = this.pos;
     
     this.draw = function(paper, attrs, velAttrs, aclAttrs){
         if(this.rep){
@@ -301,6 +313,9 @@ function Obj(kwargs){
         var delta = t// / i;
         //for(; i > 0; i--){
             //this.acl.add(this.jrk, delta);
+            this._acl = this.acl.copy();
+            this._vel = this.vel.copy();
+            this._pos = this.pos.copy();
             this.vel.add(this.acl, delta);
             this.pos.add(this.vel, delta); 
         //}
