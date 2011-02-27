@@ -10,7 +10,7 @@
         <a onclick="window.interval = window.setInterval(update, 100);">start</a>
         <a onclick="window.clearInterval(window.interval);">stop</a>
         <script type="text/javascript">
-            var paper = Raphael(10, 30, 400, 400);
+            var paper = Raphael(10, 30, 600, 600);
             objs = [];
             
             var ball = new Obj({ pos: new Vector(10, 10), vel: new Vector(20, 17), r: 10 });
@@ -25,17 +25,19 @@
             
             var chain = [];
             for(var i = 0; i < 20; i++){
-                chain[i] = new Obj({ pos : new Vector(10 + i * 15, 70+i ), r : 4});
-                chain[i].set("spring", 10 + i*0.1);
-                chain[i].set("mass", 3);
+                chain[i] = new Obj({ pos : new Vector(10 + i * 25, 100+i ), r : 4});
+                chain[i].set("spring", 10);
+                chain[i].set("mass", 4);
                 chain[i].draw(paper, {fill: Raphael.getColor() });
             }
+            chain[0].set("mass", 10);
+            chain[19].set("mass", 10);
             objs = objs.concat(chain);
             
             var gravity = new Force({ prop: "mass", coeff: 1 });
             //gravity.draw(paper, ball, rock, {"scale": 1, stroke: "green"});
             
-            var spring = new Force({ prop: "spring", coeff: 0.00001, fn: "linDist"})
+            var spring = new Force({ prop: "spring", coeff: 0.01, fn: "springDist", zeroVal: 23})
             //spring.draw(paper, chain[0], chain[1], paper, {stroke: "orange"}); 
             
             var update = function(){
