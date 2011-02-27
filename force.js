@@ -27,10 +27,11 @@ function Vector(x, y, kwargs){
         if(offset === undefined){
             offset = new Vector(0, 0);
             attr = {};
-        }if(attrs === undefined){
+        }
+        /*if(attrs === undefined){
             attr = offset;
             offset = new Vector(0, 0);
-        }
+        }*/
         attrs = _(attrs || {}).extend(this.drawAttrs);
         this.drawAttrs = _(attrs).extend();
         //console.log(offset);
@@ -245,8 +246,8 @@ function collision(obj1, obj2){
         //obj2.vel.erase();
       //  obj1.acl.add(vf1);
       //  obj2.acl.add(vf2);
-        obj1.vel.gets(vf1);
-        obj2.vel.gets(vf2);
+        obj1.vel.gets(vf1.reflect(r));
+        obj2.vel.gets(vf2.reflect(r));
         return t;
     }else{
         return 0;
@@ -264,7 +265,7 @@ function Obj(kwargs){
         acl: new Vector(0, 0),
         //jrk: new Vector(0, 0),
         r : 1,
-        coeff_elastic: 0.7,
+        coeff_elastic: 0.9,
         coeff_friction: 0.3,
         mass : 1
     };
